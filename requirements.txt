@@ -1,0 +1,4 @@
+arcade
+SpeechRecognition
+PyAudio
+# DataStructures module required for A* search
