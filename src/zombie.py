@@ -1,7 +1,9 @@
 from enemy import Enemy
 import arcade
+import os
 
-ASSETS_PATH = "../assets"
+# Get the absolute path to the assets directory
+ASSETS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets")
 PLAYER_MOVE_SPEED = 5
 
 
@@ -33,28 +35,27 @@ class Zombie(Enemy):
         standing_texture_path = texture_path + "/" + "/zombie/character_zombie_hold.png"
 
         # Load them all now
+        base_textures = [
+            arcade.load_texture(texture)
+            for texture in walking_texture_path
+        ]
+
         self.walk_left_textures = [
-            arcade.load_texture(texture, mirrored=True)
-            for texture in walking_texture_path
+            texture.flip_horizontally()
+            for texture in base_textures
         ]
 
-        self.walk_right_textures = [
-            arcade.load_texture(texture, mirrored=False)
-            for texture in walking_texture_path
-        ]
+        self.walk_right_textures = base_textures
 
-        self.stand_left_textures = [
-            arcade.load_texture(standing_texture_path)
-        ]
-        self.stand_right_textures = [
-            arcade.load_texture(standing_texture_path)
-        ]
+        base_standing_texture = arcade.load_texture(standing_texture_path)
+        self.stand_left_textures = [base_standing_texture.flip_horizontally()]
+        self.stand_right_textures = [base_standing_texture]
 
         # Set the initial texture
         self.texture = self.stand_left_textures[0]
 
-    def update(self):
-        super().update()
+    def update(self, delta_time=0):
+        super().update(delta_time)
 
         if self.level == "easy":
             if self.path_updater_counter == 0:

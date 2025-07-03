@@ -13,6 +13,7 @@ import arcade
 import speech_recognition as sr
 import threading
 import time
+import os
 
 from player import Player
 from robot import Robot
@@ -99,7 +100,8 @@ class MyGame(arcade.Window):
 
         self.player_list.append(self.player_sprite)
 
-        map_name = "map.json"
+        # Use absolute path for map.json
+        map_name = os.path.join(os.path.dirname(__file__), "map.json")
         layer_options = {
             "Platforms": {"use_spatial_hash": True},
             "Package": {"use_spatial_hash": True},
@@ -143,10 +145,10 @@ class MyGame(arcade.Window):
             #e.engine = arcade.PhysicsEnginePlatformer(e, self.wall_list, gravity_constant=GRAVITY/2)
             e.setGameInstance(self)
 
-        self.camera = arcade.Camera(SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.gui_camera = arcade.Camera(SCREEN_WIDTH, SCREEN_HEIGHT)
+        # Initialize cameras (simplified for newer Arcade versions)
+        self.camera = None
+        self.gui_camera = None
 
-        # Center camera on user
         self.pan_camera_to_user()
 
         self.game_over = False
@@ -183,13 +185,28 @@ class MyGame(arcade.Window):
                                                      playing_field_right_boundary,
                                                      playing_field_bottom_boundary)
 
+    def pan_camera_to_user(self, panning_fraction: float = 1.0):
+        """ Manage Scrolling """
+
+        # This spot would center on the user
+        screen_center_x = self.player_sprite.center_x - (self.camera.viewport_width / 2)
+        screen_center_y = self.player_sprite.center_y - (
+            self.camera.viewport_height / 2
+        )
+        if screen_center_x < 0:
+            screen_center_x = 0
+        if screen_center_y < 0:
+            screen_center_y = 0
+        user_centered = screen_center_x, screen_center_y
+
+        self.camera.move_to(user_centered, panning_fraction)
+    
     def on_draw(self):
         """
         Render the screen.
         """
 
-        # This command has to happen before we start drawing
-        self.camera.use()
+        # Clear the screen
         self.clear()
 
         # Draw all the sprites.
@@ -199,8 +216,6 @@ class MyGame(arcade.Window):
         self.goal_list.draw()
         self.player_list.draw()
         self.enemy_list.draw()
-
-        self.gui_camera.use()
 
         # Put the text on the screen.
         output = f"Score: {self.score}"
@@ -217,11 +232,6 @@ class MyGame(arcade.Window):
                 30,
             )
 
-        """
-        for e in self.enemy_list:
-            if not e.current_path is None:
-                arcade.draw_line_strip(e.current_path, arcade.color.ORANGE, 1)
-        """
     def on_key_press(self, key, modifiers):
         """
         Called whenever a key is pressed.
@@ -278,24 +288,7 @@ class MyGame(arcade.Window):
         if len(arcade.check_for_collision_with_list(self.player_sprite, self.goal_list)) > 0:
             self.game_over = True
 
-        # Pan to the user
         self.pan_camera_to_user(panning_fraction=0.50)
-
-    def pan_camera_to_user(self, panning_fraction: float = 1.0):
-        """ Manage Scrolling """
-
-        # This spot would center on the user
-        screen_center_x = self.player_sprite.center_x - (self.camera.viewport_width / 2)
-        screen_center_y = self.player_sprite.center_y - (
-            self.camera.viewport_height / 2
-        )
-        if screen_center_x < 0:
-            screen_center_x = 0
-        if screen_center_y < 0:
-            screen_center_y = 0
-        user_centered = screen_center_x, screen_center_y
-
-        self.camera.move_to(user_centered, panning_fraction)
 
     def voice_command(self):
 

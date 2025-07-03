@@ -78,8 +78,8 @@ class Enemy(arcade.Sprite):
         list = list + self.current_path[:1]
         self.newPosition = util.get_three_points_average(list)
 
-    def update(self):
-        super().update()
+    def update(self, delta_time=0):
+        super().update(delta_time)
 
         self.path_updater_counter += 1
         self.engine.update()
