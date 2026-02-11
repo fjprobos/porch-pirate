@@ -45,14 +45,11 @@ MOVEMENT_SPEED = 3
 JUMP_SPEED = 15
 GRAVITY = 0.3
 
-class MyGame(arcade.Window):
-    """Main application class."""
+class GameView(arcade.View):
+    """Main game view."""
 
     def __init__(self):
-        """
-        Initializer
-        """
-        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+        super().__init__()
 
         # Tilemap Object
         self.tile_map = None
@@ -73,15 +70,17 @@ class MyGame(arcade.Window):
         self.end_of_map = 0
         self.game_over = False
 
-        # Cameras
+        # Camera
         self.camera = None
-        self.gui_camera = None
 
         # Voice command
         self.voice_recognizer = None
 
         # Game level difficulty
         self.level = None
+
+        # Scenario map file
+        self.map_file = None
 
     def setup(self):
         """Set up the game and initialize the variables."""
@@ -100,8 +99,7 @@ class MyGame(arcade.Window):
 
         self.player_list.append(self.player_sprite)
 
-        # Use absolute path for map.json
-        map_name = os.path.join(os.path.dirname(__file__), "map.json")
+        map_name = self.map_file or os.path.join(os.path.dirname(__file__), "map.json")
         layer_options = {
             "Platforms": {"use_spatial_hash": True},
             "Package": {"use_spatial_hash": True},
@@ -220,7 +218,7 @@ class MyGame(arcade.Window):
             self.enemy_list.draw()
 
         # Draw HUD with the default (fixed) camera
-        with self.default_camera.activate():
+        with self.window.default_camera.activate():
             output = f"Score: {self.score}"
             arcade.draw_text(
                 output, 10, 20, arcade.color.BLACK, 14
@@ -326,9 +324,6 @@ class MyGame(arcade.Window):
             # speech was unintelligible
             print("Try again")
 
-    def setLevel(self, level):
-        self.level = level
-
 class SpeechRecognizerThread(threading.Thread):
     def __init__(self, threadID, game):
         threading.Thread.__init__(self)
@@ -345,15 +340,25 @@ class SpeechRecognizerThread(threading.Thread):
                 break
         print("Exiting Speech Recognizer Thread")
 
+
 def main():
+    window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+
     args = sys.argv[1:]
-    print(args)
-    window = MyGame()
-    window.setLevel(args[1])
-    window.setup()
-    thread1 = SpeechRecognizerThread(1, window)
-    thread1.start()
+    if len(args) >= 2:
+        game_view = GameView()
+        game_view.level = args[1]
+        game_view.setup()
+        window.show_view(game_view)
+        thread1 = SpeechRecognizerThread(1, game_view)
+        thread1.start()
+    else:
+        from start_menu import StartMenuView
+        menu = StartMenuView()
+        window.show_view(menu)
+
     arcade.run()
+
 
 if __name__ == "__main__":
     main()
