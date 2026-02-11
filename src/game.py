@@ -145,9 +145,8 @@ class MyGame(arcade.Window):
             #e.engine = arcade.PhysicsEnginePlatformer(e, self.wall_list, gravity_constant=GRAVITY/2)
             e.setGameInstance(self)
 
-        # Initialize cameras (simplified for newer Arcade versions)
-        self.camera = None
-        self.gui_camera = None
+        # Initialize camera for world scrolling
+        self.camera = arcade.Camera2D()
 
         self.pan_camera_to_user()
 
@@ -188,18 +187,20 @@ class MyGame(arcade.Window):
     def pan_camera_to_user(self, panning_fraction: float = 1.0):
         """ Manage Scrolling """
 
-        # This spot would center on the user
-        screen_center_x = self.player_sprite.center_x - (self.camera.viewport_width / 2)
-        screen_center_y = self.player_sprite.center_y - (
-            self.camera.viewport_height / 2
-        )
-        if screen_center_x < 0:
-            screen_center_x = 0
-        if screen_center_y < 0:
-            screen_center_y = 0
-        user_centered = screen_center_x, screen_center_y
+        screen_center_x = self.player_sprite.center_x
+        screen_center_y = self.player_sprite.center_y
 
-        self.camera.move_to(user_centered, panning_fraction)
+        # Clamp so camera doesn't scroll past the left/bottom edges
+        if screen_center_x < self.camera.viewport_width / 2:
+            screen_center_x = self.camera.viewport_width / 2
+        if screen_center_y < self.camera.viewport_height / 2:
+            screen_center_y = self.camera.viewport_height / 2
+
+        self.camera.position = arcade.math.lerp_2d(
+            self.camera.position,
+            (screen_center_x, screen_center_y),
+            panning_fraction,
+        )
     
     def on_draw(self):
         """
@@ -209,28 +210,30 @@ class MyGame(arcade.Window):
         # Clear the screen
         self.clear()
 
-        # Draw all the sprites.
-        self.background_list.draw()
-        self.wall_list.draw()
-        self.package_list.draw()
-        self.goal_list.draw()
-        self.player_list.draw()
-        self.enemy_list.draw()
+        # Draw world sprites with the scrolling camera
+        with self.camera.activate():
+            self.background_list.draw()
+            self.wall_list.draw()
+            self.package_list.draw()
+            self.goal_list.draw()
+            self.player_list.draw()
+            self.enemy_list.draw()
 
-        # Put the text on the screen.
-        output = f"Score: {self.score}"
-        arcade.draw_text(
-            output, 10, 20, arcade.color.BLACK, 14
-        )
-
-        if self.game_over:
+        # Draw HUD with the default (fixed) camera
+        with self.default_camera.activate():
+            output = f"Score: {self.score}"
             arcade.draw_text(
-                "Game Over",
-                200,
-                200,
-                arcade.color.BLACK,
-                30,
+                output, 10, 20, arcade.color.BLACK, 14
             )
+
+            if self.game_over:
+                arcade.draw_text(
+                    "Game Over",
+                    200,
+                    200,
+                    arcade.color.BLACK,
+                    30,
+                )
 
     def on_key_press(self, key, modifiers):
         """
